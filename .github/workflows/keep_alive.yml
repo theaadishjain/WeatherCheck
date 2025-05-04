@@ -1,0 +1,71 @@
+name: Keep WhatsApp Connection Alive
+
+on:
+  schedule:
+    # Run daily at midnight UTC to keep the connection alive
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # Allow manual triggering for testing
+
+jobs:
+  keep_connection_alive:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install twilio>=8.5.0
+          
+      - name: Send Keep-Alive Message
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+          TWILIO_MESSAGING_SID: ${{ secrets.TWILIO_MESSAGING_SID }}
+          TO_WHATSAPP_NUMBER: ${{ secrets.TO_WHATSAPP_NUMBER }}
+        run: |
+          python -c "
+import os
+from twilio.rest import Client
+
+# Get environment variables
+account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+from_number = os.environ.get('TWILIO_FROM_NUMBER')
+messaging_sid = os.environ.get('TWILIO_MESSAGING_SID')
+to_number = os.environ.get('TO_WHATSAPP_NUMBER')
+
+# Create Twilio client
+client = Client(account_sid, auth_token)
+
+# Special invisible character as message to keep connection alive 
+# without disturbing the user (zero-width space)
+message_body = '‍'  # This contains an invisible character
+
+try:
+    # Send message using Messaging Service if available, otherwise use direct number
+    if messaging_sid:
+        message = client.messages.create(
+            body=message_body,
+            messaging_service_sid=messaging_sid,
+            to=f'whatsapp:{to_number}'
+        )
+    else:
+        message = client.messages.create(
+            body=message_body,
+            from_=f'whatsapp:{from_number}',
+            to=f'whatsapp:{to_number}'
+        )
+    
+    print(f'Keep-alive message sent successfully! SID: {message.sid}')
+except Exception as e:
+    print(f'Error sending keep-alive message: {str(e)}')
+" 

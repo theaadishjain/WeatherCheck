@@ -1,0 +1,46 @@
+name: Daily Weather Notification
+
+on:
+  schedule:
+    # Run at 9:00 AM every day (UTC timezone)
+    - cron: '0 9 * * *'
+  workflow_dispatch:  # Allows manual triggering for testing
+
+jobs:
+  send_weather_notification:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        continue-on-error: false
+          
+      - name: Send Weather WhatsApp Message
+        id: send_message
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+          TWILIO_MESSAGING_SID: ${{ secrets.TWILIO_MESSAGING_SID }}
+          TO_WHATSAPP_NUMBER: ${{ secrets.TO_WHATSAPP_NUMBER }}
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          CITY: ${{ secrets.CITY }}
+        run: |
+          python weather_whatsapp.py 
+        continue-on-error: true
+      
+      - name: Check script success
+        if: steps.send_message.outcome == 'failure'
+        run: |
+          echo "::error::Weather notification script failed to run properly"
+          exit 1 
