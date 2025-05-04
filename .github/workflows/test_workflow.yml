@@ -1,0 +1,68 @@
+name: Test Workflow
+
+on:
+  workflow_dispatch:  # Allows manual triggering for testing
+
+jobs:
+  test_environment:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests twilio python-dotenv
+          
+      - name: Test environment and secrets
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+          TWILIO_MESSAGING_SID: ${{ secrets.TWILIO_MESSAGING_SID }}
+          TO_WHATSAPP_NUMBER: ${{ secrets.TO_WHATSAPP_NUMBER }}
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          CITY: ${{ secrets.CITY }}
+        run: |
+          python -c "
+import os, sys
+
+# Check if required secrets are set
+required = ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TO_WHATSAPP_NUMBER', 'OPENWEATHER_API_KEY']
+missing = [var for var in required if not os.environ.get(var)]
+
+# Check if either TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SID is set
+if not os.environ.get('TWILIO_FROM_NUMBER') and not os.environ.get('TWILIO_MESSAGING_SID'):
+    missing.append('TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SID')
+
+# Report results
+if missing:
+    print('Error: Missing required environment variables: ' + ', '.join(missing))
+    sys.exit(1)
+    
+print('All required secrets are set!')
+
+# Check OpenWeather API with minimal request
+import requests
+api_key = os.environ.get('OPENWEATHER_API_KEY')
+city = os.environ.get('CITY', 'London')
+print(f'Testing weather API for city: {city}')
+
+url = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric'
+response = requests.get(url, timeout=10)
+if response.status_code == 200:
+    print('OpenWeatherMap API test successful!')
+else:
+    print(f'OpenWeatherMap API error: {response.status_code}')
+    print(response.text)
+    sys.exit(1)
+
+print('All tests passed! Your environment is correctly set up.')
+          " 

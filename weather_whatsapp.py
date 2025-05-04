@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-import os, sys, requests
+import os, sys
+# Try to load .env file if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("Loaded environment variables from .env file")
+except ImportError:
+    print("python-dotenv not installed, using system environment variables")
+
+import requests
 from datetime import datetime
 from twilio.rest import Client
 
@@ -175,7 +184,10 @@ def main():
         missing.append("TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SID")
     
     if missing:
-        print(f"Error: Missing required environment variables: {', '.join(missing)}")
+        error_msg = f"Error: Missing required environment variables: {', '.join(missing)}"
+        print(error_msg)
+        # Print available environment variable keys for debugging (without values for security)
+        print(f"Available environment variable keys: {[k for k in os.environ.keys() if not k.startswith('_')]}")
         sys.exit(1)
     
     # Get weather and send message
@@ -194,7 +206,9 @@ def main():
         env.get("TWILIO_MESSAGING_SID")
     )
     
-    if not success: sys.exit(1)
+    if not success: 
+        print("Failed to send WhatsApp message. Check Twilio credentials and configuration.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main() 
