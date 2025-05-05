@@ -32,37 +32,37 @@ jobs:
         
       - name: Verify environment variables
         run: |
-          python << 'EOF'
-import os
-import sys
-
-required = ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TO_WHATSAPP_NUMBER', 'OPENWEATHER_API_KEY']
-missing = [var for var in required if not os.environ.get(var)]
-
-if not os.environ.get('TWILIO_FROM_NUMBER') and not os.environ.get('TWILIO_MESSAGING_SID'):
-    missing.append('TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SID')
-
-if missing:
-    print('Error: Missing required environment variables: ' + ', '.join(missing))
-    sys.exit(1)
-
-print('All required environment variables are set')
-for var in required:
-    if os.environ.get(var):
-        print(f'✓ {var} is set')
-    else:
-        print(f'✗ {var} is NOT set')
-
-if os.environ.get('TWILIO_FROM_NUMBER'):
-    print('✓ TWILIO_FROM_NUMBER is set')
-else:
-    print('✗ TWILIO_FROM_NUMBER is NOT set')
-
-if os.environ.get('TWILIO_MESSAGING_SID'):
-    print('✓ TWILIO_MESSAGING_SID is set')
-else:
-    print('✗ TWILIO_MESSAGING_SID is NOT set')
-EOF
+          python - <<'END_PYTHON'
+          import os
+          import sys
+          
+          required = ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TO_WHATSAPP_NUMBER', 'OPENWEATHER_API_KEY']
+          missing = [var for var in required if not os.environ.get(var)]
+          
+          if not os.environ.get('TWILIO_FROM_NUMBER') and not os.environ.get('TWILIO_MESSAGING_SID'):
+              missing.append('TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SID')
+          
+          if missing:
+              print('Error: Missing required environment variables: ' + ', '.join(missing))
+              sys.exit(1)
+          
+          print('All required environment variables are set')
+          for var in required:
+              if os.environ.get(var):
+                  print(f'✓ {var} is set')
+              else:
+                  print(f'✗ {var} is NOT set')
+          
+          if os.environ.get('TWILIO_FROM_NUMBER'):
+              print('✓ TWILIO_FROM_NUMBER is set')
+          else:
+              print('✗ TWILIO_FROM_NUMBER is NOT set')
+          
+          if os.environ.get('TWILIO_MESSAGING_SID'):
+              print('✓ TWILIO_MESSAGING_SID is set')
+          else:
+              print('✗ TWILIO_MESSAGING_SID is NOT set')
+          END_PYTHON
         env:
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
